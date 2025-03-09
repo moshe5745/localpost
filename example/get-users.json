@@ -1,0 +1,10 @@
+{
+  "name": "Get User",
+  "method": "GET",
+  "url": "{{BASE_URL}}/user",
+  "headers": {
+    "Authorization": "Bearer {{API_KEY}}",
+    "Accept": "application/json"
+  },
+  "body": null
+}
