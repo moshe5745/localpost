@@ -8,7 +8,7 @@
     "username": "me_here",
     "password": "super_secret"
   },
-  "env": {
+  "set_env": {
     "token": {
       "header": "Auth"
     },

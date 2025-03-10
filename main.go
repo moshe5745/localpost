@@ -108,7 +108,6 @@ func main() {
 		Short: "A CLI tool to manage and execute HTTP requests",
 		Long:  `A tool to save and execute HTTP requests stored in a Git repository.`,
 	}
-	// Use StringP instead of StringVar to avoid overwriting env unless flag is provided
 	rootCmd.PersistentFlags().StringP("env", "e", "", "Environment to use (e.g., dev, prod); defaults to .localpost or 'dev'")
 	if flagEnv := rootCmd.PersistentFlags().Lookup("env").Value.String(); flagEnv != "" {
 		env = flagEnv // Only override if flag is explicitly set

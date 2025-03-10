@@ -19,10 +19,10 @@ type Request struct {
 	Headers map[string]string `json:"headers,omitempty"`
 	Body    interface{}       `json:"body,omitempty"`
 	EnvName string            // Not in JSON, set by main.go
-	Env     map[string]struct {
+	SetEnv  map[string]struct {
 		Header string `json:"header,omitempty"`
 		Body   string `json:"body,omitempty"`
-	} `json:"env,omitempty"`
+	} `json:"set_env,omitempty"` // Renamed from Env
 }
 
 type Config struct {
@@ -123,7 +123,7 @@ func ExecuteRequest(req Request) (status string, body string, err error) {
 		json.Unmarshal(respBody, &respData)
 	}
 
-	for envKey, rule := range req.Env {
+	for envKey, rule := range req.SetEnv { // Updated from req.Env
 		var value string
 		if rule.Header != "" {
 			value = resp.Header.Get(rule.Header)
