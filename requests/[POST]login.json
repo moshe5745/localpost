@@ -1,6 +1,8 @@
 {
   "headers": {
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+    "HX-Request": "true"
   },
   "body": {
     "username": "me_here",
