@@ -6,19 +6,18 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
-// Request represents an HTTP request stored in JSON
 type Request struct {
-	Name    string            `json:"name"`
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
+	// Method and URL are set from filename in main.go
+	Method  string            // Not in JSON
+	URL     string            // Not in JSON
 	Headers map[string]string `json:"headers,omitempty"`
 	Body    string            `json:"body,omitempty"`
 }
 
-// ParseRequest reads and parses a JSON request file
 func ParseRequest(filePath string) (Request, error) {
 	data, err := ioutil.ReadFile(filePath)
 	if err != nil {
@@ -33,17 +32,24 @@ func ParseRequest(filePath string) (Request, error) {
 	return req, nil
 }
 
-// replaceEnvVars substitutes environment variables in a string
+var envVarRegex = regexp.MustCompile(`\{\{([^}]+)}}`)
+
 func replaceEnvVars(s string) string {
-	return os.Expand(s, func(key string) string {
-		return os.Getenv(key)
+	return envVarRegex.ReplaceAllStringFunc(s, func(match string) string {
+		key := strings.Trim(match, "{}")
+		value := os.Getenv(key)
+		if value == "" {
+			return match
+		}
+		return value
 	})
 }
 
-// ExecuteRequest sends the HTTP request and returns the response
 func ExecuteRequest(req Request) (status string, body string, err error) {
-	// Replace env vars
 	req.URL = replaceEnvVars(req.URL)
+	if !strings.HasPrefix(req.URL, "http://") && !strings.HasPrefix(req.URL, "https://") {
+		return "", "", fmt.Errorf("invalid URL after env substitution: %s (missing BASE_URL?)", req.URL)
+	}
 	for key, value := range req.Headers {
 		req.Headers[key] = replaceEnvVars(value)
 	}

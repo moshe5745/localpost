@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// DetectShell identifies the user's shell and its config file
 func DetectShell() (string, string) {
 	shellPath := os.Getenv("SHELL")
 	if shellPath != "" {
@@ -39,7 +38,6 @@ func DetectShell() (string, string) {
 	return "bash", filepath.Join(os.Getenv("HOME"), ".bashrc")
 }
 
-// InstallCompletion sets up shell completion for the given root command
 func InstallCompletion(rootCmd *cobra.Command) error {
 	shell, configFile := DetectShell()
 	fmt.Printf("Detected shell: %s\n", shell)
@@ -75,7 +73,7 @@ zstyle ':completion:*:*:localpost:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:
 
 `)
 		if err != nil {
-			return fmt.Errorf("error writing compinit to completion file: %v", err)
+			return fmt.Errorf("error writing zsh header: %v", err)
 		}
 		err = rootCmd.GenZshCompletion(f)
 	case "fish":
