@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/moshe5745/localpost/completion"
+	"github.com/moshe5745/localpost/install"
 	"github.com/moshe5745/localpost/request"
 
 	"github.com/joho/godotenv"
@@ -25,7 +25,6 @@ func getRequestFiles(_ *cobra.Command, args []string, toComplete string) ([]stri
 
 	files, err := os.ReadDir(requestsDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "DEBUG: Error reading %s: %v\n", requestsDir, err)
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 
@@ -35,8 +34,7 @@ func getRequestFiles(_ *cobra.Command, args []string, toComplete string) ([]stri
 			matches := methodRegex.FindStringSubmatch(file.Name())
 			if len(matches) == 3 {
 				method, name := matches[1], matches[2]
-				// Remove brackets from display name
-				displayName := method + strings.TrimSuffix(name, ".json")
+				displayName := fmt.Sprintf("'%s %s'", method, strings.TrimSuffix(name, ".json"))
 				if strings.HasPrefix(displayName, toComplete) {
 					requestFiles = append(requestFiles, displayName)
 				}
@@ -44,7 +42,7 @@ func getRequestFiles(_ *cobra.Command, args []string, toComplete string) ([]stri
 		}
 	}
 
-	return requestFiles, cobra.ShellCompDirectiveNoSpace | cobra.ShellCompDirectiveNoFileComp
+	return requestFiles, cobra.ShellCompDirectiveNoFileComp
 }
 
 func main() {
@@ -58,25 +56,13 @@ func main() {
 		Long:  `A tool to save and execute HTTP requests stored in a Git repository.`,
 	}
 
-	var sampleNames = []string{"Alice", "Bob", "Charlie", "Dave"}
-
-	var greetCmd = &cobra.Command{
-		Use:   "greet [name]",
-		Short: "Greet someone",
-		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("Hello, %s!\n", args[0])
-		},
-		ValidArgs: sampleNames,
-	}
-
-	var completionCmd = &cobra.Command{
-		Use:   "completion",
-		Short: "Generate and install completion script automatically",
-		Long:  `Automatically detects your shell and installs the completion script in your home directory.`,
+	var install = &cobra.Command{
+		Use:   "install",
+		Short: "Generate and install install script automatically",
+		Long:  `Automatically detects your shell and installs the install script in your home directory.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := completion.InstallCompletion(rootCmd); err != nil {
-				fmt.Printf("Error installing completion: %v\n", err)
+				fmt.Printf("Error installing install: %v\n", err)
 				os.Exit(1)
 			}
 		},
@@ -88,19 +74,17 @@ func main() {
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			input := args[0]
-			// Extract method and name from input (e.g., "GETusers")
-			// Assume method is all uppercase until a lowercase letter or end
-			var method, name string
-			for i, r := range input {
-				if r >= 'A' && r <= 'Z' {
-					method += string(r)
-				} else {
-					name = input[i:]
-					break
-				}
+			// Split input into method and name (e.g., "GET users")
+			parts := strings.SplitN(input, " ", 2)
+			if len(parts) != 2 {
+				fmt.Printf("Error: invalid input format, expected 'METHOD name' (e.g., GET users)\n")
+				os.Exit(1)
 			}
-			if method == "" || name == "" {
-				fmt.Printf("Error: invalid input format, expected METHODname (e.g., GETusers)\n")
+			method, name := parts[0], parts[1]
+
+			// Validate method is uppercase (simple check)
+			if method != strings.ToUpper(method) {
+				fmt.Printf("Error: method must be uppercase (e.g., GET, POST)\n")
 				os.Exit(1)
 			}
 
@@ -163,8 +147,7 @@ func main() {
 		},
 	}
 
-	rootCmd.AddCommand(greetCmd)
-	rootCmd.AddCommand(completionCmd)
+	rootCmd.AddCommand(install)
 	rootCmd.AddCommand(requestCmd)
 	rootCmd.AddCommand(newRequestCmd)
 

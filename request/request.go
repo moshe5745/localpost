@@ -3,7 +3,7 @@ package request
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -19,7 +19,7 @@ type Request struct {
 }
 
 func ParseRequest(filePath string) (Request, error) {
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return Request{}, fmt.Errorf("error reading request file: %v", err)
 	}
@@ -73,7 +73,7 @@ func ExecuteRequest(req Request) (status string, body string, err error) {
 	}
 	defer resp.Body.Close()
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", fmt.Errorf("error reading response: %v", err)
 	}

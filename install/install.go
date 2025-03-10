@@ -45,18 +45,18 @@ func InstallCompletion(rootCmd *cobra.Command) error {
 	var completionFile string
 	switch shell {
 	case "bash":
-		completionFile = filepath.Join(os.Getenv("HOME"), ".localpost-completion.bash")
+		completionFile = filepath.Join(os.Getenv("HOME"), ".localpost-install.bash")
 	case "zsh":
-		completionFile = filepath.Join(os.Getenv("HOME"), ".localpost-completion.zsh")
+		completionFile = filepath.Join(os.Getenv("HOME"), ".localpost-install.zsh")
 	case "fish":
 		completionFile = filepath.Join(os.Getenv("HOME"), ".config", "fish", "completions", "localpost.fish")
 	default:
-		completionFile = filepath.Join(os.Getenv("HOME"), ".localpost-completion.bash")
+		completionFile = filepath.Join(os.Getenv("HOME"), ".localpost-install.bash")
 	}
 
 	f, err := os.Create(completionFile)
 	if err != nil {
-		return fmt.Errorf("error creating completion file: %v", err)
+		return fmt.Errorf("error creating install file: %v", err)
 	}
 	defer f.Close()
 
@@ -64,12 +64,12 @@ func InstallCompletion(rootCmd *cobra.Command) error {
 	case "bash":
 		err = rootCmd.GenBashCompletion(f)
 	case "zsh":
-		_, err = f.WriteString(`# Initialize Zsh completion system
+		_, err = f.WriteString(`# Initialize Zsh install system
 autoload -U compinit && compinit
 
 # Enable menu selection for localpost
-zstyle ':completion:*:*:localpost:*' menu yes select
-zstyle ':completion:*:*:localpost:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+zstyle ':install:*:*:localpost:*' menu yes select
+zstyle ':install:*:*:localpost:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
 
 `)
 		if err != nil {
@@ -82,7 +82,7 @@ zstyle ':completion:*:*:localpost:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:
 		err = rootCmd.GenBashCompletion(f)
 	}
 	if err != nil {
-		return fmt.Errorf("error generating completion: %v", err)
+		return fmt.Errorf("error generating install: %v", err)
 	}
 
 	if shell == "fish" {
@@ -114,17 +114,17 @@ zstyle ':completion:*:*:localpost:*' list-colors 'di=34:ln=35:so=32:pi=33:ex=31:
 		defer fConfig.Close()
 
 		if shell == "zsh" && !strings.Contains(string(configContent), "compinit") {
-			if _, err := fConfig.WriteString("\n# Localpost CLI completion setup\n" +
+			if _, err := fConfig.WriteString("\n# Localpost CLI install setup\n" +
 				"autoload -U compinit && compinit\n" +
 				sourceLine + "\n"); err != nil {
 				return fmt.Errorf("error writing to config file: %v", err)
 			}
 		} else if !strings.Contains(string(configContent), sourceLine) {
-			if _, err := fConfig.WriteString("\n# Localpost CLI completion\n" + sourceLine + "\n"); err != nil {
+			if _, err := fConfig.WriteString("\n# Localpost CLI install\n" + sourceLine + "\n"); err != nil {
 				return fmt.Errorf("error writing to config file: %v", err)
 			}
 		}
-		fmt.Printf("Updated %s with completion sourcing\n", configFile)
+		fmt.Printf("Updated %s with install sourcing\n", configFile)
 	} else {
 		fmt.Printf("Completion sourcing already present in %s\n", configFile)
 	}
