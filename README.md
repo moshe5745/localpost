@@ -245,6 +245,7 @@ set-env-var:
 | `set-env-var <key> <value>` | Set an environment variable for the current environment in `config.yaml`.                                        | `$: lpost set-env-var BASE_URL https://api.example.com`                  |
 | `show-env`                  | Display the current environment and variables from `config.yaml`. Use `--all` for the full config.               | `$: lpost show-env` or `$: lpost show-env --all`                         |
 | `completion`                | Output completion script for your shell (bash, zsh, fish) to stdout. Requires `--shell` flag.                    | `$: source <(lpost completion --shell zsh)`                              |
+| `list`                | Lists all available requests | `$: source <(lpost list)`                              |
 
 - **Global Flag**: Override the environment temporarily with `-e` or `--env`:
 
