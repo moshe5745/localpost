@@ -49,7 +49,9 @@ func RequestCmd() *cobra.Command {
 		Aliases: []string{"r"},
 		Short:   "Execute a request from a YAML file in the requests/ directory",
 		Long: `Execute a request defined in a YAML file located in the requests/ directory.
-The path should be in the format /path/to/dir/METHOD (e.g., /user/POST or /api/v1/auth/login/POST).
+Supports two formats:
+  - Hierarchical: /path/to/dir/METHOD (e.g., /user/POST or /api/v1/auth/login/POST)
+  - Flat: METHOD_name (e.g., GET_login, POST_user)
 Use --infer-schema to generate a JTD schema from the response.
 Use --verbose to show detailed request and response information.`,
 		Args: cobra.ExactArgs(1),
@@ -61,24 +63,74 @@ Use --verbose to show detailed request and response information.`,
 				os.Exit(1)
 			}
 
-			// Validate that the path ends with a valid HTTP method
-			parts := strings.Split(requestPath, "/")
-			if len(parts) < 1 {
-				fmt.Printf("Error: invalid request path '%s', expected format '/path/to/dir/METHOD'\n", requestPath)
-				os.Exit(1)
-			}
-			method := parts[len(parts)-1]
 			validMethods := map[string]bool{
 				"GET": true, "POST": true, "PUT": true, "DELETE": true,
 				"PATCH": true, "HEAD": true, "OPTIONS": true, "TRACE": true,
 			}
-			if !validMethods[method] {
-				fmt.Printf("Error: invalid HTTP method '%s' in path, expected one of %v\n", method, validMethods)
+
+			var filePath string
+			var err error
+
+			// First, try the new hierarchical format: /path/to/dir/METHOD
+			parts := strings.Split(requestPath, "/")
+			if len(parts) >= 1 {
+				method := parts[len(parts)-1]
+				if validMethods[method] {
+					// New format: path ends with HTTP method
+					filePath = filepath.Join(util.RequestsDir, requestPath+".yaml")
+				}
+			}
+
+			// If new format didn't work, try the old flat format: METHOD_name
+			if filePath == "" {
+				// Check if any valid HTTP method is a prefix of the requestPath
+				for method := range validMethods {
+					if strings.HasPrefix(strings.ToUpper(requestPath), method+"_") {
+						// Old format: METHOD_name
+						filePath = filepath.Join(util.RequestsDir, requestPath+".yaml")
+						break
+					}
+				}
+			}
+
+			// If still no match, try to find the file by checking if it exists as-is
+			if filePath == "" {
+				testPath := filepath.Join(util.RequestsDir, requestPath+".yaml")
+				if _, err := os.Stat(testPath); err == nil {
+					filePath = testPath
+				}
+			}
+
+			// If we still haven't found a valid file path, show error
+			if filePath == "" {
+				fmt.Printf("Error: could not find request file for '%s'.\n", requestPath)
+				fmt.Printf("Expected formats:\n")
+				fmt.Printf("  - Hierarchical: /path/to/dir/METHOD (e.g., /user/GET, /api/auth/POST)\n")
+				fmt.Printf("  - Flat: METHOD_name (e.g., GET_login, POST_user)\n")
+				fmt.Printf("Available requests:\n")
+				
+				// List available requests to help the user
+				var requestPaths []string
+				filepath.Walk(util.RequestsDir, func(path string, info os.FileInfo, err error) error {
+					if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
+						relPath, err := filepath.Rel(util.RequestsDir, path)
+						if err != nil {
+							return err
+						}
+						relPath = strings.ReplaceAll(relPath, string(os.PathSeparator), "/")
+						requestPaths = append(requestPaths, "  "+strings.TrimSuffix(relPath, ".yaml"))
+					}
+					return nil
+				})
+				if len(requestPaths) > 0 {
+					fmt.Printf("%s\n", strings.Join(requestPaths, "\n"))
+				} else {
+					fmt.Printf("  (no requests found)\n")
+				}
 				os.Exit(1)
 			}
 
-			filePath := filepath.Join(util.RequestsDir, requestPath+".yaml")
-			_, err := util.HandleRequest(filePath, verbose, inferSchema)
+			_, err = util.HandleRequest(filePath, verbose, inferSchema)
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
 				os.Exit(1)
